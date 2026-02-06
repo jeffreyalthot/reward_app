@@ -16,8 +16,8 @@ android.sdk = 33
 android.ndk = 25b
 android.accept_sdk_license = True
 
-# IMPORTANT: ajoutez votre APP ID AdMob réel avant publication
-# android.meta_data = com.google.android.gms.ads.APPLICATION_ID="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"
+# APP ID AdMob
+android.meta_data = com.google.android.gms.ads.APPLICATION_ID="ca-app-pub-1112325581018121~8266327508"
 
 [buildozer]
 log_level = 2
