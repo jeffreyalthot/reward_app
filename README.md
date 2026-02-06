@@ -28,3 +28,9 @@ buildozer android debug
 ```
 
 APK généré dans `bin/`.
+
+## Protocole réseau (découverte + relais)
+
+- Une spécification de protocole pair-à-pair sûr est disponible dans `NETWORK_PROTOCOL.md`.
+- Le design couvre la découverte des nœuds, le relais, le routage et la sécurité (mTLS, signatures, anti-rejeu).
+
