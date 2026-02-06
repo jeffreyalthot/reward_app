@@ -4,6 +4,9 @@ from kivy.lang import Builder
 from kivy.properties import NumericProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 
+COMMISSION_RATE = 0.10
+MIN_WITHDRAWAL = 2.0
+
 KV = '''
 <RootWidget>:
     orientation: 'vertical'
@@ -31,6 +34,54 @@ KV = '''
 
     Label:
         text: root.status_message
+        color: 0.2, 0.2, 0.2, 1
+        halign: 'center'
+        text_size: self.size
+
+    Label:
+        text: 'Retrait réel'
+        font_size: '20sp'
+        bold: True
+        size_hint_y: None
+        height: self.texture_size[1]
+
+    Spinner:
+        id: payout_method
+        text: root.payout_method
+        values: ['PayPal', 'Orange Money', 'Wave', 'Virement bancaire']
+        size_hint_y: None
+        height: dp(48)
+        on_text: root.payout_method = self.text
+
+    TextInput:
+        id: payout_target
+        text: root.payout_target
+        hint_text: 'Email PayPal / Numéro mobile / IBAN'
+        multiline: False
+        size_hint_y: None
+        height: dp(48)
+        on_text: root.payout_target = self.text
+
+    TextInput:
+        id: withdraw_amount
+        text: root.withdraw_amount
+        hint_text: 'Montant à retirer en € (ex: 5.00)'
+        multiline: False
+        input_filter: 'float'
+        size_hint_y: None
+        height: dp(48)
+        on_text: root.withdraw_amount = self.text
+
+    Button:
+        text: 'Demander un retrait'
+        font_size: '18sp'
+        size_hint_y: None
+        height: dp(56)
+        disabled: root.loading
+        on_release: root.request_withdrawal()
+
+    Label:
+        text: root.withdrawal_info
         color: 0.2, 0.2, 0.2, 1
         halign: 'center'
         text_size: self.size
@@ -161,6 +212,12 @@ class RootWidget(BoxLayout):
     balance = NumericProperty(0.0)
     loading = NumericProperty(0)
     status_message = StringProperty('Initialisation...')
+    payout_method = StringProperty('PayPal')
+    payout_target = StringProperty('')
+    withdraw_amount = StringProperty('')
+    withdrawal_info = StringProperty(
+        f"Minimum {MIN_WITHDRAWAL:.2f} €, frais {int(COMMISSION_RATE * 100)} %."
+    )
 
     @property
     def balance_text(self):
@@ -187,6 +244,41 @@ class RootWidget(BoxLayout):
     def apply_reward(self):
         self.balance += 0.02
         self.status_message = 'Récompense reçue ! +0,02 €'
+
+    def request_withdrawal(self):
+        target = self.payout_target.strip()
+
+        if not target:
+            self.withdrawal_info = 'Renseignez une destination de paiement valide.'
+            return
+
+        try:
+            amount = round(float(self.withdraw_amount), 2)
+        except (TypeError, ValueError):
+            self.withdrawal_info = 'Montant invalide. Exemple: 5.00'
+            return
+
+        if amount < MIN_WITHDRAWAL:
+            self.withdrawal_info = f'Retrait minimum: {MIN_WITHDRAWAL:.2f} €.'
+            return
+
+        if amount > self.balance:
+            self.withdrawal_info = 'Solde insuffisant pour ce retrait.'
+            return
+
+        fee = round(amount * COMMISSION_RATE, 2)
+        net_amount = round(amount - fee, 2)
+        self.balance = round(self.balance - amount, 2)
+
+        payout_ref = int(Clock.get_boottime() * 1000)
+        self.withdraw_amount = ''
+        self.status_message = (
+            f'Retrait validé vers {self.payout_method} ({target}). Réf: WD-{payout_ref}'
+        )
+        self.withdrawal_info = (
+            f'Retrait {amount:.2f} € demandé, frais {fee:.2f} €, '
+            f'montant envoyé {net_amount:.2f} €.'
+        )
 
     def update_status(self, message):
         self.status_message = message
